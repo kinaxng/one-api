@@ -3,9 +3,10 @@ package types
 import "encoding/json"
 
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens            int `json:"prompt_tokens"`
+	CompletionTokens        int `json:"completion_tokens,omitempty"`
+	TotalTokens             int `json:"total_tokens"`
+	CompletionTokensDetails any `json:"completion_tokens_details,omitempty"`
 }
 
 type OpenAIError struct {
@@ -28,7 +29,8 @@ func (e *OpenAIError) Error() string {
 
 type OpenAIErrorWithStatusCode struct {
 	OpenAIError
-	StatusCode int `json:"status_code"`
+	StatusCode int  `json:"status_code"`
+	LocalError bool `json:"-"`
 }
 
 type OpenAIErrorResponse struct {

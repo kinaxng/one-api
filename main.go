@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"one-api/cli"
 	"one-api/common"
+	"one-api/common/cache"
 	"one-api/common/config"
 	"one-api/common/logger"
 	"one-api/common/notify"
+	"one-api/common/oidc"
+	"one-api/common/redis"
 	"one-api/common/requester"
 	"one-api/common/storage"
 	"one-api/common/telegram"
@@ -16,6 +19,7 @@ import (
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay/relay_util"
+	"one-api/relay/task"
 	"one-api/router"
 	"time"
 
@@ -34,15 +38,22 @@ var indexPage []byte
 func main() {
 	cli.InitCli()
 	config.InitConf()
+	if viper.GetString("log_level") == "debug" {
+		config.Debug = true
+	}
+
 	logger.SetupLogger()
-	logger.SysLog("One API " + config.Version + " started")
+	logger.SysLog("One Hub " + config.Version + " started")
 	// Initialize SQL Database
 	model.SetupDB()
 	defer model.CloseDB()
 	// Initialize Redis
-	common.InitRedisClient()
+	redis.InitRedisClient()
+	cache.InitCacheManager()
 	// Initialize options
 	model.InitOptionMap()
+	// Initialize oidc
+	oidc.InitOIDCConfig()
 	relay_util.NewPricing()
 	initMemoryCache()
 	initSync()
@@ -53,6 +64,7 @@ func main() {
 	telegram.InitTelegramBot()
 
 	controller.InitMidjourneyTask()
+	task.InitTask()
 	notify.InitNotifier()
 	cron.InitCron()
 	storage.InitStorage()
@@ -92,6 +104,11 @@ func initHttpServer() {
 	server.Use(gin.Recovery())
 	server.Use(middleware.RequestId())
 	middleware.SetUpLogger(server)
+
+	trustedHeader := viper.GetString("trusted_header")
+	if trustedHeader != "" {
+		server.TrustedPlatform = trustedHeader
+	}
 
 	store := cookie.NewStore([]byte(config.SessionSecret))
 	server.Use(sessions.Sessions("session", store))

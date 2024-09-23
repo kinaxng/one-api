@@ -16,6 +16,7 @@ type ContextKey string
 
 const ProxyHTTPAddrKey ContextKey = "proxyHttpAddr"
 const ProxySock5AddrKey ContextKey = "proxySock5Addr"
+const ProxyAddrKey ContextKey = "proxyAddr"
 
 func ProxyFunc(req *http.Request) (*url.URL, error) {
 	proxyAddr := req.Context().Value(ProxyHTTPAddrKey)
@@ -72,7 +73,7 @@ func SetProxy(proxyAddr string, ctx context.Context) context.Context {
 	key := ProxyHTTPAddrKey
 
 	// 如果是以 socks5:// 开头的地址，那么使用 socks5 代理
-	if strings.HasPrefix(proxyAddr, "socks5://") {
+	if strings.HasPrefix(proxyAddr, "socks5") {
 		key = ProxySock5AddrKey
 	}
 

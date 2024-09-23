@@ -59,7 +59,6 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 	tx := DB.Begin()
 	err = tx.Model(Channel{}).Where("tag = ?", tag).Updates(
 		Channel{
-			BaseURL:      channel.BaseURL,
 			Other:        channel.Other,
 			Models:       channel.Models,
 			Group:        channel.Group,
@@ -69,6 +68,7 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 			TestModel:    channel.TestModel,
 			OnlyChat:     channel.OnlyChat,
 			Plugin:       channel.Plugin,
+			PreCost:      channel.PreCost,
 		}).Error
 
 	if err != nil {

@@ -33,6 +33,9 @@ type User struct {
 	RequestCount     int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
 	Group            string         `json:"group" gorm:"type:varchar(32);default:'default'"`
 	AffCode          string         `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
+	AffCount         int            `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
+	AffQuota         int            `json:"aff_quota" gorm:"type:int;default:0;column:aff_quota"`
+	AffHistoryQuota  int            `json:"aff_history_quota" gorm:"type:int;default:0;column:aff_history"`
 	InviterId        int            `json:"inviter_id" gorm:"type:int;column:inviter_id;index"`
 	CreatedTime      int64          `json:"created_time" gorm:"bigint"`
 	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
@@ -261,7 +264,10 @@ func (user *User) FillUserByUsername() error {
 	if user.Username == "" {
 		return errors.New("username 为空！")
 	}
-	DB.Where(User{Username: user.Username}).First(user)
+	err := DB.Where(User{Username: user.Username}).First(user)
+	if err != nil {
+		return err.Error
+	}
 	return nil
 }
 
@@ -332,6 +338,12 @@ func ValidateAccessToken(token string) (user *User) {
 		return user
 	}
 	return nil
+}
+
+func GetUserFields(id int, fields []string) (map[string]interface{}, error) {
+	result := make(map[string]interface{})
+	err := GetFieldsByID(&User{}, fields, id, &result)
+	return result, err
 }
 
 func GetUserQuota(id int) (quota int, err error) {

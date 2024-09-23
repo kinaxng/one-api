@@ -7,6 +7,7 @@ import (
 	"one-api/common"
 	"one-api/common/config"
 	"one-api/common/requester"
+	"one-api/common/utils"
 	"one-api/model"
 	"one-api/types"
 	"strings"
@@ -27,6 +28,42 @@ type ProviderConfig struct {
 	ImagesEdit          string
 	ImagesVariations    string
 	ModelList           string
+	Rerank              string
+}
+
+func (pc *ProviderConfig) SetAPIUri(customMapping map[string]interface{}) {
+	relayModeMap := map[int]*string{
+		config.RelayModeChatCompletions:    &pc.ChatCompletions,
+		config.RelayModeCompletions:        &pc.Completions,
+		config.RelayModeEmbeddings:         &pc.Embeddings,
+		config.RelayModeAudioSpeech:        &pc.AudioSpeech,
+		config.RelayModeAudioTranscription: &pc.AudioTranscriptions,
+		config.RelayModeAudioTranslation:   &pc.AudioTranslations,
+		config.RelayModeModerations:        &pc.Moderation,
+		config.RelayModeImagesGenerations:  &pc.ImagesGenerations,
+		config.RelayModeImagesEdits:        &pc.ImagesEdit,
+		config.RelayModeImagesVariations:   &pc.ImagesVariations,
+	}
+
+	for key, value := range customMapping {
+		keyInt := utils.String2Int(key)
+		customValue, isString := value.(string)
+		if !isString || customValue == "" {
+			continue
+		}
+
+		if _, exists := relayModeMap[keyInt]; !exists {
+			continue
+		}
+
+		value := customValue
+		if value == "disable" {
+			value = ""
+		}
+
+		*relayModeMap[keyInt] = value
+
+	}
 }
 
 type BaseProvider struct {
@@ -56,8 +93,11 @@ func (p *BaseProvider) GetFullRequestURL(requestURL string, _ string) string {
 
 // 获取请求头
 func (p *BaseProvider) CommonRequestHeaders(headers map[string]string) {
-	headers["Content-Type"] = p.Context.Request.Header.Get("Content-Type")
-	headers["Accept"] = p.Context.Request.Header.Get("Accept")
+	if p.Context != nil {
+		headers["Content-Type"] = p.Context.Request.Header.Get("Content-Type")
+		headers["Accept"] = p.Context.Request.Header.Get("Accept")
+	}
+
 	if headers["Content-Type"] == "" {
 		headers["Content-Type"] = "application/json"
 	}
@@ -131,6 +171,8 @@ func (p *BaseProvider) GetAPIUri(relayMode int) string {
 		return p.Config.ImagesEdit
 	case config.RelayModeImagesVariations:
 		return p.Config.ImagesVariations
+	case config.RelayModeRerank:
+		return p.Config.Rerank
 	default:
 		return ""
 	}
@@ -139,7 +181,7 @@ func (p *BaseProvider) GetAPIUri(relayMode int) string {
 func (p *BaseProvider) GetSupportedAPIUri(relayMode int) (url string, err *types.OpenAIErrorWithStatusCode) {
 	url = p.GetAPIUri(relayMode)
 	if url == "" {
-		err = common.StringErrorWrapper("The API interface is not supported", "unsupported_api", http.StatusNotImplemented)
+		err = common.StringErrorWrapperLocal("The API interface is not supported", "unsupported_api", http.StatusNotImplemented)
 		return
 	}
 

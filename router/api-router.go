@@ -31,6 +31,9 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/wechat/bind", middleware.CriticalRateLimit(), middleware.UserAuth(), controller.WeChatBind)
 		apiRouter.GET("/oauth/email/bind", middleware.CriticalRateLimit(), middleware.UserAuth(), controller.EmailBind)
 
+		apiRouter.GET("/oauth/endpoint", middleware.CriticalRateLimit(), controller.OIDCEndpoint)
+		apiRouter.GET("/oauth/oidc", middleware.CriticalRateLimit(), controller.OIDCAuth)
+
 		apiRouter.Any("/payment/notify/:uuid", controller.PaymentCallback)
 
 		userRoute := apiRouter.Group("/user")
@@ -144,12 +147,8 @@ func SetApiRouter(router *gin.Engine) {
 		analyticsRoute := apiRouter.Group("/analytics")
 		analyticsRoute.Use(middleware.AdminAuth())
 		{
-			analyticsRoute.GET("/user_statistics", controller.GetUserStatistics)
-			analyticsRoute.GET("/channel_statistics", controller.GetChannelStatistics)
-			analyticsRoute.GET("/redemption_statistics", controller.GetRedemptionStatistics)
-			analyticsRoute.GET("/users_period", controller.GetUserStatisticsByPeriod)
-			analyticsRoute.GET("/channel_period", controller.GetChannelExpensesByPeriod)
-			analyticsRoute.GET("/redemption_period", controller.GetRedemptionStatisticsByPeriod)
+			analyticsRoute.GET("/statistics", controller.GetStatisticsDetail)
+			analyticsRoute.GET("/period", controller.GetStatisticsByPeriod)
 		}
 
 		pricesRoute := apiRouter.Group("/prices")
@@ -179,6 +178,10 @@ func SetApiRouter(router *gin.Engine) {
 		mjRoute := apiRouter.Group("/mj")
 		mjRoute.GET("/self", middleware.UserAuth(), controller.GetUserMidjourney)
 		mjRoute.GET("/", middleware.AdminAuth(), controller.GetAllMidjourney)
+
+		taskRoute := apiRouter.Group("/task")
+		taskRoute.GET("/self", middleware.UserAuth(), controller.GetUserAllTask)
+		taskRoute.GET("/", middleware.AdminAuth(), controller.GetAllTask)
 	}
 
 }
